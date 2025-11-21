@@ -3,15 +3,16 @@ package config
 import (
 	"github.com/joho/godotenv"
 
-	"fmt"
 	"log"
 	"os"
-	"strconv"
 )
 
 type BackendConfig struct {
-	db_host string
-	db_port int
+	Db_host     string
+	Db_port     string
+	Db_user     string
+	Db_password string
+	Db_name     string
 }
 
 func Load() (*BackendConfig, error) {
@@ -21,14 +22,12 @@ func Load() (*BackendConfig, error) {
 		log.Println("WARNING: No .env file found, using environment variables")
 	}
 
-	db_port, err := strconv.Atoi(getEnv("DB_PORT", "5432"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse integer database port value: %w", err)
-	}
-
 	return &BackendConfig{
-		db_host: getEnv("DB_HOST", "localhost"),
-		db_port: db_port,
+		Db_host:     getEnv("DB_HOST", "localhost"),
+		Db_port:     getEnv("DB_PORT", "5432"),
+		Db_user:     getEnv("DB_USER", "postgres"),
+		Db_password: getEnv("DB_PASSWORD", "password"),
+		Db_name:     getEnv("DB_NAME", "postgres"),
 	}, nil
 }
 
