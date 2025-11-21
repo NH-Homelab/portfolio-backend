@@ -21,7 +21,7 @@ type Pg_Config struct {
 
 // Instantiates a PostgresDB connection type
 func NewPostgresDB(config Pg_Config) (*PostgresDB, error) {
-	connstr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+	connstr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		config.Host, config.Port, config.User, config.Password, config.Db_name)
 
 	db, err := sql.Open("postgres", connstr)
