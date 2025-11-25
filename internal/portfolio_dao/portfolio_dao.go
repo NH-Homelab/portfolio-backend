@@ -26,6 +26,11 @@ const (
 		SELECT id, name, description, created_at
 		FROM projects
 		ORDER BY id`
+	getMilestoneById = `
+		SELECT id, title, milestone_date, description, body_url, 
+			   github_url, image_url, milestone_type, status, project_id
+		FROM milestones
+		WHERE id = $1`
 	getAllPublishedMilestones = `
 		SELECT id, title, milestone_date, description, body_url, 
 			   github_url, image_url, milestone_type, status, project_id
@@ -358,6 +363,43 @@ func (dao *PortfolioDao) DeleteMilestone(id int) error {
 	return nil
 }
 
+// GetMilestoneById returns a single milestone by ID
+func (dao *PortfolioDao) GetMilestoneById(id int) (*models.Milestone, error) {
+	rows, err := dao.db.Query(getMilestoneById, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query milestone: %w", err)
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return nil, fmt.Errorf("milestone with id %d not found", id)
+	}
+
+	var m models.Milestone
+	var bodyURL, githubURL, imageURL sql.NullString
+	var projectID sql.NullInt64
+
+	err = rows.Scan(
+		&m.ID, &m.Title, &m.Milestone_date, &m.Description,
+		&bodyURL, &githubURL, &imageURL,
+		&m.Milestone_type, &m.Status, &projectID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan milestone row: %w", err)
+	}
+
+	// Convert NullString to regular string
+	m.Body_url = bodyURL.String
+	m.Github_url = githubURL.String
+	m.Image_url = imageURL.String
+	if projectID.Valid {
+		m.Project_id = int(projectID.Int64)
+	}
+	m.Tags = make([]string, 0)
+
+	return &m, rows.Err()
+}
+
 // GetAllPublishedMilestones returns all milestones with 'published' status
 func (dao *PortfolioDao) GetAllPublishedMilestones() ([]models.Milestone, error) {
 	rows, err := dao.db.Query(getAllPublishedMilestones)
@@ -370,11 +412,12 @@ func (dao *PortfolioDao) GetAllPublishedMilestones() ([]models.Milestone, error)
 	for rows.Next() {
 		var m models.Milestone
 		var bodyURL, githubURL, imageURL sql.NullString
+		var projectID sql.NullInt64
 
 		err := rows.Scan(
 			&m.ID, &m.Title, &m.Milestone_date, &m.Description,
 			&bodyURL, &githubURL, &imageURL,
-			&m.Milestone_type, &m.Status, &m.Project_id,
+			&m.Milestone_type, &m.Status, &projectID,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan milestone row: %w", err)
@@ -384,6 +427,9 @@ func (dao *PortfolioDao) GetAllPublishedMilestones() ([]models.Milestone, error)
 		m.Body_url = bodyURL.String
 		m.Github_url = githubURL.String
 		m.Image_url = imageURL.String
+		if projectID.Valid {
+			m.Project_id = int(projectID.Int64)
+		}
 		m.Tags = make([]string, 0)
 
 		milestones = append(milestones, m)
