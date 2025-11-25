@@ -5,6 +5,7 @@ import (
 
 	"github.com/NH-Homelab/portfolio-backend/internal/config"
 	pgdb "github.com/NH-Homelab/portfolio-backend/internal/pg_db"
+	portfoliodao "github.com/NH-Homelab/portfolio-backend/internal/portfolio_dao"
 )
 
 func main() {
@@ -26,4 +27,13 @@ func main() {
 		log.Fatalf("Failed initial database setup: %v", err)
 	}
 	defer pgdb.Close()
+
+	dao := portfoliodao.NewPortfolioDao(pgdb)
+
+	p, err := dao.GetAllProjects()
+	if err != nil {
+		log.Fatalf("Failed to get projects: %v", err)
+	}
+
+	log.Printf("%v", p)
 }
