@@ -16,6 +16,8 @@ spec:
         - name: portfolio-backend
           image: portfolio-backend:local
           imagePullPolicy: IfNotPresent
+          imagePullSecrets:
+          - name: ghcr-creds
           ports:
             - containerPort: 8080
           envFrom:
