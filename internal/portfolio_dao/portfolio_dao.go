@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/NH-Homelab/portfolio-backend/internal/database"
 	"github.com/NH-Homelab/portfolio-backend/internal/models"
 )
@@ -37,6 +39,11 @@ const (
 		FROM milestones
 		WHERE status = 'published'
 		ORDER BY milestone_date DESC`
+	getTagsForMilestones = `
+		SELECT ttm.milestone, mt.tag
+		FROM tags_to_milestones AS ttm
+		JOIN milestone_tags AS mt ON ttm.tag = mt.id
+		WHERE ttm.milestone = ANY($1)`
 	createProject = `
 		INSERT INTO projects (name, description)
 		VALUES ($1, $2)
@@ -433,6 +440,45 @@ func (dao *PortfolioDao) GetAllPublishedMilestones() ([]models.Milestone, error)
 		m.Tags = make([]string, 0)
 
 		milestones = append(milestones, m)
+	}
+
+	// If there are no milestones, return early
+	if len(milestones) == 0 {
+		return milestones, rows.Err()
+	}
+
+	// Collect milestone IDs to fetch tags in a single query
+	ids := make([]int, len(milestones))
+	for i := range milestones {
+		ids[i] = milestones[i].ID
+	}
+
+	tagRows, err := dao.db.Query(getTagsForMilestones, pq.Array(ids))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tags for milestones: %w", err)
+	}
+	defer tagRows.Close()
+
+	tagsMap := make(map[int][]string)
+	for tagRows.Next() {
+		var mid int
+		var tag string
+		if err := tagRows.Scan(&mid, &tag); err != nil {
+			return nil, fmt.Errorf("failed to scan tag row: %w", err)
+		}
+		tagsMap[mid] = append(tagsMap[mid], tag)
+	}
+	if err := tagRows.Err(); err != nil {
+		return nil, fmt.Errorf("tag rows error: %w", err)
+	}
+
+	// Attach tags to milestones
+	for i := range milestones {
+		if t, ok := tagsMap[milestones[i].ID]; ok {
+			milestones[i].Tags = t
+		} else {
+			milestones[i].Tags = make([]string, 0)
+		}
 	}
 
 	return milestones, rows.Err()

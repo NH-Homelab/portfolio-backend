@@ -8,6 +8,7 @@ import (
 	pgdb "github.com/NH-Homelab/portfolio-backend/internal/pg_db"
 	portfoliodao "github.com/NH-Homelab/portfolio-backend/internal/portfolio_dao"
 	publichandler "github.com/NH-Homelab/portfolio-backend/internal/public_handler"
+	"github.com/rs/cors"
 )
 
 func logRequest(next http.Handler) http.Handler {
@@ -51,7 +52,16 @@ func main() {
 	ph.RegisterHandlers(mux)
 
 	log.Printf("Starting HTTP server on :8080...")
-	err = http.ListenAndServe(":8080", logRequest(setContentType(mux)))
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   backend_config.Allowed_origins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(logRequest(setContentType(mux)))
+	err = http.ListenAndServe(":8080", handler)
 	if err != nil {
 		log.Fatalf("HTTP server failed: %v", err)
 	}

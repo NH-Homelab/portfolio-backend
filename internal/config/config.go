@@ -5,6 +5,7 @@ import (
 
 	"log"
 	"os"
+	"strings"
 )
 
 type BackendConfig struct {
@@ -13,6 +14,7 @@ type BackendConfig struct {
 	Db_user     string
 	Db_password string
 	Db_name     string
+	Allowed_origins []string
 }
 
 func Load() (*BackendConfig, error) {
@@ -28,6 +30,7 @@ func Load() (*BackendConfig, error) {
 		Db_user:     getEnv("DB_USER", "postgres"),
 		Db_password: getEnv("DB_PASSWORD", "password"),
 		Db_name:     getEnv("DB_NAME", "postgres"),
+		Allowed_origins: parseAllowedOrigins("ALLOWED_ORIGINS", "https://www.nickhenley.dev"),
 	}, nil
 }
 
@@ -37,4 +40,25 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+// parseAllowedOrigins reads an env var and returns a slice of origins.
+// The env var may be a comma-separated list. If not set, returns the
+// provided default as a single-element slice.
+func parseAllowedOrigins(key, defaultOrigin string) []string {
+	if v, ok := os.LookupEnv(key); ok {
+		// split by comma and trim spaces
+		parts := strings.Split(v, ",")
+		var out []string
+		for _, p := range parts {
+			t := strings.TrimSpace(p)
+			if t != "" {
+				out = append(out, t)
+			}
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	return []string{defaultOrigin}
 }

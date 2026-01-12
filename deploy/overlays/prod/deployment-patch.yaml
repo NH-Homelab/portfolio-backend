@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: portfolio-backend
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: portfolio-secret
