@@ -54,7 +54,7 @@ func main() {
 	log.Printf("Starting HTTP server on :8080...")
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"https://www.nickhenley.dev"},
+		AllowedOrigins:   backend_config.Allowed_origins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
