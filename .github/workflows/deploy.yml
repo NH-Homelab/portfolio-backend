@@ -33,30 +33,9 @@ jobs:
           image-name: ${{ env.IMAGE_NAME }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
   
-  dev-deploy:
-    runs-on: dev
-    needs: build-and-push-image
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Complete Dev Deployment
-        uses: ./.github/actions/complete-deployment
-        with:
-          kustomize-path: 'deploy/overlays/prod/'
-          image-tag: ${{ needs.build-and-push-image.outputs.sha-tag }}
-          secrets-json: |
-            {
-              "DB_HOST": "${{ secrets.DB_HOST }}",
-              "DB_PORT": "${{ secrets.DB_PORT }}",
-              "DB_USER": "${{ secrets.DB_USER }}",
-              "DB_PASSWORD": "${{ secrets.DB_PASSWORD }}",
-              "DB_NAME": "${{ secrets.DB_NAME }}"
-            }
-  
   prod-deploy:
-    runs-on: k8s-runner
-    needs: [build-and-push-image, dev-deploy]
+    runs-on: k8s-prod-k3s
+    needs: [build-and-push-image]
     if: (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && success()
     steps:
       - name: Checkout code
